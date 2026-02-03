@@ -1,0 +1,221 @@
+{
+  "name": "AI Pengatur File Chatbot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chatbot",
+        "options": {
+          "cors": {
+            "allowedOrigins": "*"
+          }
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "ai-pengatur-file-chatbot"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract and validate input\nconst userMessage = $input.first().json.body.message || '';\nconst conversationId = $input.first().json.body.conversationId || 'default';\n\n// System prompt for AI Pengatur File\nconst systemPrompt = `Anda adalah asisten AI untuk \"AI Pengatur File\" - aplikasi manajemen file cerdas dari Raymaizing.\n\nKONTEKS PRODUK:\n- AI Pengatur File adalah sistem manajemen file bertenaga AI\n- Fitur utama: Ganti Nama Massal, Folder Ajaib, Template Penamaan\n- 3 paket: Gratis (0-50 file), Pro (51-1000 file), Bisnis (1000+ file)\n- Harga Pro mulai Rp75.000/bulan, Bisnis mulai Rp450.000/bulan\n- Diskon 15% untuk pembayaran tahunan\n- Mendukung PDF, foto, dokumen berbagai format\n- Privasi terjamin, enkripsi tingkat enterprise\n- Target: pemerintah, fotografer, arsivis, UKM, perusahaan\n\nFITUR DETAIL:\n1. Ganti Nama Massal: Rename ratusan file sekaligus dengan AI\n2. Folder Ajaib: Organisasi otomatis berdasarkan konten file\n3. Template Penamaan: Buat pola nama file yang konsisten\n\nKEUNGGULAN:\n- AI cerdas yang memahami konten file\n- Batch processing untuk efisiensi\n- Template kustom untuk konsistensi\n- Privasi dan keamanan terjamin\n- Support 24/7 untuk paket berbayar\n\nINSTRUKSI:\n- Jawab dalam bahasa Indonesia yang natural dan ramah\n- Fokus pada manfaat dan solusi yang ditawarkan\n- Jika ditanya harga, sebutkan paket yang sesuai kebutuhan\n- Dorong untuk mencoba paket gratis terlebih dahulu\n- Jika pertanyaan di luar konteks produk, arahkan kembali ke AI Pengatur File\n- Gunakan emoji yang relevan untuk membuat percakapan lebih menarik\n- Maksimal 150 kata per respons\n- Berikan jawaban yang spesifik dan actionable`;\n\n// Prepare data for AI call\nreturn {\n  userMessage,\n  systemPrompt,\n  conversationId,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "process-input",
+      "name": "Process Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer your_groq_api_key_here"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "llama-3.3-70b-versatile"
+            },
+            {
+              "name": "messages",
+              "value": "={{ [{\"role\": \"system\", \"content\": $json.systemPrompt}, {\"role\": \"user\", \"content\": $json.userMessage}] }}"
+            },
+            {
+              "name": "max_tokens",
+              "value": 200
+            },
+            {
+              "name": "temperature",
+              "value": 0.7
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "groq-llama-call",
+      "name": "Groq Llama 3.3 70B",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://text.pollinations.ai/openai",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer sk_Eilu4fFFCl269IDZLgtu1KHpjN3HJgNOTypeNameKeyCreated"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "openai"
+            },
+            {
+              "name": "messages",
+              "value": "={{ [{\"role\": \"system\", \"content\": $json.systemPrompt}, {\"role\": \"user\", \"content\": $json.userMessage}] }}"
+            },
+            {
+              "name": "max_tokens",
+              "value": 150
+            },
+            {
+              "name": "temperature",
+              "value": 0.7
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "pollinations-backup",
+      "name": "Pollinations Backup",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 480]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process AI response from Groq or Pollinations\nlet aiResponse = '';\nlet source = 'fallback';\n\n// Try to get response from Groq first\nif ($input.first().json && $input.first().json.choices && $input.first().json.choices[0]) {\n  aiResponse = $input.first().json.choices[0].message.content.trim();\n  source = 'groq';\n}\n// If Groq failed, try Pollinations\nelse if ($input.all().length > 1 && $input.all()[1].json && $input.all()[1].json.choices && $input.all()[1].json.choices[0]) {\n  aiResponse = $input.all()[1].json.choices[0].message.content.trim();\n  source = 'pollinations';\n}\n\n// If both AI services failed, use intelligent fallback\nif (!aiResponse || aiResponse.length < 10) {\n  const userMessage = $('Process Input').first().json.userMessage.toLowerCase();\n  \n  // Intelligent fallback responses\n  if (userMessage.includes('harga') || userMessage.includes('biaya') || userMessage.includes('paket')) {\n    aiResponse = '💰 Kami punya 3 paket:\\n\\n**Gratis** (0-50 file) - Gratis selamanya\\n**Pro** mulai Rp75.000/bulan (51-1000 file)\\n**Bisnis** mulai Rp450.000/bulan (1000+ file)\\n\\nAda diskon 15% untuk pembayaran tahunan! Mau coba paket gratis dulu? 😊';\n  } else if (userMessage.includes('fitur') || userMessage.includes('fungsi')) {\n    aiResponse = '✨ Fitur utama kami:\\n\\n🔄 **Ganti Nama Massal** - Rename banyak file sekaligus dengan AI\\n📁 **Folder Ajaib** - Organisasi otomatis berdasarkan konten\\n📝 **Template Penamaan** - Atur pola nama file yang konsisten\\n\\nSemua bertenaga AI untuk hasil yang cerdas! 🤖';\n  } else if (userMessage.includes('cara') || userMessage.includes('bagaimana')) {\n    aiResponse = '📚 Cara pakai sangat mudah:\\n\\n1️⃣ Pilih folder yang mau diatur\\n2️⃣ AI akan scan dan analisis file\\n3️⃣ Pilih template atau biarkan AI yang tentukan\\n4️⃣ Klik proses dan selesai!\\n\\nAda tutorial lengkap di dashboard setelah daftar.';\n  } else {\n    aiResponse = '🤖 Halo! Saya asisten AI untuk AI Pengatur File. Saya bisa bantu Anda dengan pertanyaan tentang:\\n\\n💰 Harga dan paket\\n✨ Fitur dan fungsi\\n📚 Cara penggunaan\\n🔒 Keamanan dan privasi\\n🆘 Support dan bantuan\\n\\nAda yang spesifik yang ingin Anda tanyakan? 😊';\n  }\n  source = 'intelligent-fallback';\n}\n\n// Return formatted response\nreturn {\n  response: aiResponse,\n  source: source,\n  timestamp: new Date().toISOString(),\n  conversationId: $('Process Input').first().json.conversationId,\n  userMessage: $('Process Input').first().json.userMessage\n};"
+      },
+      "id": "format-response",
+      "name": "Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"success\": true,\n  \"response\": $json.response,\n  \"source\": $json.source,\n  \"timestamp\": $json.timestamp,\n  \"conversationId\": $json.conversationId\n} }}"
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Process Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Input": {
+      "main": [
+        [
+          {
+            "node": "Groq Llama 3.2 3B",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Pollinations Backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Llama 3.2 3B": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pollinations Backup": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Response": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-02-03T08:40:00.000Z",
+  "versionId": "1"
+}
