@@ -3,10 +3,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { 
   CreditCard, 
   Shield, 
-  CheckCircle2, 
+  CheckCircle, 
   ArrowLeft, 
   Sparkles,
   Clock,
@@ -50,6 +56,8 @@ const SubscribePage = () => {
   const [isAnnual, setIsAnnual] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedTier, setSelectedTier] = useState(3); // Default Pro 100 files
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userAutoFilled, setUserAutoFilled] = useState(false);
   
   const [customerData, setCustomerData] = useState({
     firstName: "",
@@ -64,7 +72,7 @@ const SubscribePage = () => {
     subscribeNewsletter: true
   });
 
-  // Get tier from URL params using window.location
+  // Get tier from URL params and check for logged-in user
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tier = urlParams.get('tier');
@@ -79,6 +87,31 @@ const SubscribePage = () => {
     
     if (annual !== null) {
       setIsAnnual(annual === 'true');
+    }
+
+    // Check if user is logged in and auto-fill information
+    const userData = localStorage.getItem('user_data');
+    const authToken = localStorage.getItem('auth_token');
+    
+    if (userData && authToken) {
+      setIsLoggedIn(true);
+      try {
+        const user = JSON.parse(userData);
+        setCustomerData(prev => ({
+          ...prev,
+          firstName: user.first_name || '',
+          lastName: user.last_name || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          company: user.company_name || '',
+          address: user.billing_address || '',
+          city: user.billing_city || '',
+          postalCode: user.billing_postal_code || ''
+        }));
+        setUserAutoFilled(true);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
     }
   }, []);
 
@@ -102,23 +135,6 @@ const SubscribePage = () => {
     }));
   };
 
-  const initializeMidtrans = () => {
-    try {
-      // Load Midtrans Snap script
-      const script = document.createElement('script');
-      script.src = 'https://app.sandbox.midtrans.com/snap/snap.js'; // Use sandbox for development
-      script.setAttribute('data-client-key', 'SB-Mid-client-SANDBOX_CLIENT_KEY'); // Hardcoded for now
-      document.head.appendChild(script);
-      console.log('Midtrans script loaded');
-    } catch (error) {
-      console.error('Error loading Midtrans script:', error);
-    }
-  };
-
-  useEffect(() => {
-    initializeMidtrans();
-  }, []);
-
   const handlePayment = async () => {
     if (!customerData.agreeToTerms) {
       alert('Harap setujui syarat dan ketentuan terlebih dahulu');
@@ -126,84 +142,221 @@ const SubscribePage = () => {
     }
 
     if (currentTier.price === 0) {
-      // Handle free tier
-      alert('Paket gratis berhasil diaktifkan! Anda akan diarahkan ke dashboard.');
+      // Handle free tier - use guest endpoint if not logged in
+      try {
+        setIsProcessing(true);
+        
+        const endpoint = isLoggedIn 
+          ? `${import.meta.env.VITE_API_BASE_URL}/subscription/create-transaction`
+          : `${import.meta.env.VITE_API_BASE_URL}/subscription/guest-transaction`;
+        
+        const headers = {
+          'Content-Type': 'application/json'
+        };
+        
+        if (isLoggedIn) {
+          headers['Authorization'] = `Bearer ${localStorage.getItem('auth_token')}`;
+        }
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            tier_id: selectedTier,
+            billing_cycle: isAnnual ? 'yearly' : 'monthly',
+            customer_details: {
+              first_name: customerData.firstName,
+              last_name: customerData.lastName,
+              email: customerData.email,
+              phone: customerData.phone,
+              company: customerData.company,
+              address: customerData.address,
+              city: customerData.city,
+              postal_code: customerData.postalCode
+            }
+          })
+        });
+
+        const result = await response.json();
+        
+        if (result.success && result.data.is_free) {
+          // If new user was created, store auth token
+          if (result.data.auth_token) {
+            localStorage.setItem('auth_token', result.data.auth_token);
+            localStorage.setItem('user_data', JSON.stringify(result.data.user));
+          }
+          
+          alert('Paket gratis berhasil diaktifkan! Anda akan diarahkan ke dashboard.');
+          window.location.href = '/dashboard';
+        } else {
+          alert('Terjadi kesalahan saat mengaktifkan paket gratis.');
+        }
+      } catch (error) {
+        console.error('Free tier activation error:', error);
+        alert('Terjadi kesalahan. Silakan coba lagi.');
+      } finally {
+        setIsProcessing(false);
+      }
       return;
     }
 
     setIsProcessing(true);
 
     try {
-      // Create transaction data
-      const transactionData = {
-        transaction_details: {
-          order_id: `ORDER-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          gross_amount: totalPrice
-        },
-        customer_details: {
-          first_name: customerData.firstName,
-          last_name: customerData.lastName,
-          email: customerData.email,
-          phone: customerData.phone,
-          billing_address: {
+      // Use guest endpoint if not logged in
+      const endpoint = isLoggedIn 
+        ? `${import.meta.env.VITE_API_BASE_URL}/subscription/create-transaction`
+        : `${import.meta.env.VITE_API_BASE_URL}/subscription/guest-transaction`;
+      
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (isLoggedIn) {
+        headers['Authorization'] = `Bearer ${localStorage.getItem('auth_token')}`;
+      }
+
+      // Create transaction via API
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          tier_id: selectedTier,
+          billing_cycle: isAnnual ? 'yearly' : 'monthly',
+          customer_details: {
             first_name: customerData.firstName,
             last_name: customerData.lastName,
+            email: customerData.email,
+            phone: customerData.phone,
+            company: customerData.company,
             address: customerData.address,
             city: customerData.city,
-            postal_code: customerData.postalCode,
-            country_code: "IDN"
+            postal_code: customerData.postalCode
           }
-        },
-        item_details: [{
-          id: `${currentTier.packageType}-${currentTier.files}`,
-          price: totalPrice,
-          quantity: 1,
-          name: `${currentTier.packageName} - ${typeof currentTier.files === 'number' ? currentTier.files.toLocaleString() : currentTier.files} file${isAnnual ? ' (Tahunan)' : ' (Bulanan)'}`
-        }],
-        credit_card: {
-          secure: true
-        },
-        custom_expiry: {
-          expiry_duration: isAnnual ? 365 : 30,
-          unit: "day"
-        }
-      };
+        })
+      });
 
-      // In production, you would send this to your backend
-      // For now, we'll simulate the Midtrans response
-      console.log('Transaction Data:', transactionData);
+      const result = await response.json();
       
-      // Simulate backend response with snap token
-      const snapToken = 'SIMULATED_SNAP_TOKEN_' + Date.now();
-      
-      // Open Midtrans payment popup
-      if (window.snap) {
-        window.snap.pay(snapToken, {
-          onSuccess: function(result: any) {
-            console.log('Payment Success:', result);
-            alert('Pembayaran berhasil! Akun Anda akan segera diaktifkan.');
-            // Redirect to dashboard or success page
-          },
-          onPending: function(result: any) {
-            console.log('Payment Pending:', result);
-            alert('Pembayaran sedang diproses. Kami akan mengirim konfirmasi via email.');
-          },
-          onError: function(result: any) {
-            console.log('Payment Error:', result);
-            alert('Terjadi kesalahan dalam pembayaran. Silakan coba lagi.');
-          },
-          onClose: function() {
-            console.log('Payment popup closed');
-          }
-        });
-      } else {
-        // Fallback if Midtrans not loaded
-        alert('Sistem pembayaran sedang dimuat. Silakan coba lagi dalam beberapa saat.');
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to create transaction');
       }
+
+      // If new user was created, store auth token
+      if (result.data.auth_token) {
+        localStorage.setItem('auth_token', result.data.auth_token);
+        localStorage.setItem('user_data', JSON.stringify(result.data.user));
+        setIsLoggedIn(true);
+      }
+
+      const { snap_token, order_id } = result.data;
+      
+      // Load Midtrans Snap if not already loaded
+      if (!window.snap) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
+          script.setAttribute('data-client-key', import.meta.env.VITE_MIDTRANS_CLIENT_KEY);
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+      }
+
+      // Open Midtrans payment popup
+      window.snap.pay(snap_token, {
+        onSuccess: async function(result: any) {
+          console.log('Payment Success:', result);
+          
+          try {
+            // Panggil API untuk update status subscription
+            const confirmResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/subscription/confirm-payment`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+              },
+              body: JSON.stringify({
+                order_id: order_id,
+                transaction_status: 'success',
+                payment_data: result
+              })
+            });
+
+            const confirmResult = await confirmResponse.json();
+            
+            if (confirmResult.success) {
+              console.log('✅ Subscription activated:', confirmResult.data);
+              alert('Pembayaran berhasil! Akun Anda telah diaktifkan.');
+              // Redirect to success page
+              window.location.href = `/payment/success?order_id=${order_id}&status=success`;
+            } else {
+              console.error('Failed to activate subscription:', confirmResult.message);
+              alert('Pembayaran berhasil, tapi gagal mengaktifkan subscription. Silakan hubungi support.');
+              window.location.href = `/payment/success?order_id=${order_id}&status=success`;
+            }
+          } catch (error) {
+            console.error('Error confirming payment:', error);
+            alert('Pembayaran berhasil, tapi terjadi kesalahan sistem. Silakan hubungi support.');
+            window.location.href = `/payment/success?order_id=${order_id}&status=success`;
+          }
+        },
+        onPending: async function(result: any) {
+          console.log('Payment Pending:', result);
+          
+          try {
+            // Panggil API untuk update status subscription
+            await fetch(`${import.meta.env.VITE_API_BASE_URL}/subscription/confirm-payment`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+              },
+              body: JSON.stringify({
+                order_id: order_id,
+                transaction_status: 'pending',
+                payment_data: result
+              })
+            });
+          } catch (error) {
+            console.error('Error updating pending status:', error);
+          }
+          
+          alert('Pembayaran sedang diproses. Kami akan mengirim konfirmasi via email.');
+          window.location.href = `/payment/success?order_id=${order_id}&status=pending`;
+        },
+        onError: async function(result: any) {
+          console.log('Payment Error:', result);
+          
+          try {
+            // Panggil API untuk update status subscription
+            await fetch(`${import.meta.env.VITE_API_BASE_URL}/subscription/confirm-payment`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+              },
+              body: JSON.stringify({
+                order_id: order_id,
+                transaction_status: 'failed',
+                payment_data: result
+              })
+            });
+          } catch (error) {
+            console.error('Error updating failed status:', error);
+          }
+          
+          alert('Terjadi kesalahan dalam pembayaran. Silakan coba lagi.');
+        },
+        onClose: function() {
+          console.log('Payment popup closed');
+          // User closed the popup, don't redirect
+        }
+      });
       
     } catch (error) {
       console.error('Payment Error:', error);
-      alert('Terjadi kesalahan. Silakan coba lagi.');
+      alert(`Terjadi kesalahan: ${error.message}`);
     } finally {
       setIsProcessing(false);
     }
@@ -269,122 +422,187 @@ const SubscribePage = () => {
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Left: Customer Information */}
             <div className="space-y-6">
+              {/* User Information Preview (Read-only) */}
+              {isLoggedIn && (
+                <div className="file-card p-6 bg-blue-50 border-blue-200">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-medium text-blue-700 mb-2">Informasi Akun Anda</p>
+                      <p className="text-blue-600 text-sm mb-3">
+                        Data berikut akan digunakan untuk pemrosesan pembayaran. Jika perlu mengubah informasi, silakan kunjungi halaman Dashboard setelah pembayaran selesai.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Customer Information Accordion */}
               <div className="file-card p-6">
                 <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                   <Users className="w-5 h-5" />
                   Informasi Pelanggan
                 </h2>
                 
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">Nama Depan *</Label>
-                      <Input
-                        id="firstName"
-                        value={customerData.firstName}
-                        onChange={(e) => handleInputChange('firstName', e.target.value)}
-                        placeholder="John"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Nama Belakang *</Label>
-                      <Input
-                        id="lastName"
-                        value={customerData.lastName}
-                        onChange={(e) => handleInputChange('lastName', e.target.value)}
-                        placeholder="Doe"
-                        required
-                      />
-                    </div>
-                  </div>
+                <Accordion type="multiple" defaultValue={[]} className="w-full">
+                  {/* Personal Information */}
+                  <AccordionItem value="personal">
+                    <AccordionTrigger className="text-sm font-medium">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Informasi Pribadi
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-4 pt-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="firstName">Nama Depan *</Label>
+                          <Input
+                            id="firstName"
+                            value={customerData.firstName}
+                            onChange={(e) => handleInputChange('firstName', e.target.value)}
+                            placeholder="John"
+                            required
+                            readOnly={isLoggedIn}
+                            className={isLoggedIn ? "bg-gray-50 cursor-default" : ""}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="lastName">Nama Belakang *</Label>
+                          <Input
+                            id="lastName"
+                            value={customerData.lastName}
+                            onChange={(e) => handleInputChange('lastName', e.target.value)}
+                            placeholder="Doe"
+                            required
+                            readOnly={isLoggedIn}
+                            className={isLoggedIn ? "bg-gray-50 cursor-default" : ""}
+                          />
+                        </div>
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={customerData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      placeholder="john@example.com"
-                      required
-                    />
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email *</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={customerData.email}
+                          onChange={(e) => handleInputChange('email', e.target.value)}
+                          placeholder="john@example.com"
+                          required
+                          readOnly={isLoggedIn}
+                          className={isLoggedIn ? "bg-gray-50 cursor-default" : ""}
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Nomor Telepon *</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="phone"
-                        value={customerData.phone}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                        placeholder="+62 812 3456 7890"
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Nomor Telepon *</Label>
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            id="phone"
+                            value={customerData.phone}
+                            onChange={(e) => handleInputChange('phone', e.target.value)}
+                            placeholder="+62 812 3456 7890"
+                            className={`pl-10 ${isLoggedIn ? "bg-gray-50 cursor-default" : ""}`}
+                            required
+                            readOnly={isLoggedIn}
+                          />
+                        </div>
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="company">Nama Perusahaan (Opsional)</Label>
-                    <div className="relative">
-                      <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="company"
-                        value={customerData.company}
-                        onChange={(e) => handleInputChange('company', e.target.value)}
-                        placeholder="PT. Contoh Indonesia"
-                        className="pl-10"
-                      />
+                      <div className="space-y-2">
+                        <Label htmlFor="company">Nama Perusahaan (Opsional)</Label>
+                        <div className="relative">
+                          <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            id="company"
+                            value={customerData.company}
+                            onChange={(e) => handleInputChange('company', e.target.value)}
+                            placeholder="PT. Contoh Indonesia"
+                            className={`pl-10 ${isLoggedIn ? "bg-gray-50 cursor-default" : ""}`}
+                            readOnly={isLoggedIn}
+                          />
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Billing Address */}
+                  <AccordionItem value="billing">
+                    <AccordionTrigger className="text-sm font-medium">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        Alamat Penagihan
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-4 pt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="address">Alamat Lengkap *</Label>
+                        <Input
+                          id="address"
+                          value={customerData.address}
+                          onChange={(e) => handleInputChange('address', e.target.value)}
+                          placeholder="Jl. Contoh No. 123"
+                          required
+                          readOnly={isLoggedIn}
+                          className={isLoggedIn ? "bg-gray-50 cursor-default" : ""}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="city">Kota *</Label>
+                          <Input
+                            id="city"
+                            value={customerData.city}
+                            onChange={(e) => handleInputChange('city', e.target.value)}
+                            placeholder="Jakarta"
+                            required
+                            readOnly={isLoggedIn}
+                            className={isLoggedIn ? "bg-gray-50 cursor-default" : ""}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="postalCode">Kode Pos *</Label>
+                          <Input
+                            id="postalCode"
+                            value={customerData.postalCode}
+                            onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                            placeholder="12345"
+                            required
+                            readOnly={isLoggedIn}
+                            className={isLoggedIn ? "bg-gray-50 cursor-default" : ""}
+                          />
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </div>
+
+              {/* Login Prompt for Non-logged Users Only */}
+              {!isLoggedIn && (
+                <div className="file-card p-6 bg-blue-50 border-blue-200">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-medium text-blue-700 mb-2">Sudah punya akun?</p>
+                      <p className="text-blue-600 text-sm mb-3">
+                        Login untuk mengisi informasi secara otomatis dan mempercepat proses pembayaran.
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`}
+                        className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                      >
+                        Login Sekarang
+                      </Button>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Billing Address */}
-              <div className="file-card p-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <MapPin className="w-5 h-5" />
-                  Alamat Penagihan
-                </h3>
-                
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Alamat Lengkap *</Label>
-                    <Input
-                      id="address"
-                      value={customerData.address}
-                      onChange={(e) => handleInputChange('address', e.target.value)}
-                      placeholder="Jl. Contoh No. 123"
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="city">Kota *</Label>
-                      <Input
-                        id="city"
-                        value={customerData.city}
-                        onChange={(e) => handleInputChange('city', e.target.value)}
-                        placeholder="Jakarta"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="postalCode">Kode Pos *</Label>
-                      <Input
-                        id="postalCode"
-                        value={customerData.postalCode}
-                        onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                        placeholder="12345"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
 
               {/* Terms and Newsletter */}
               <div className="file-card p-6 space-y-4">
@@ -515,19 +733,19 @@ const SubscribePage = () => {
                 
                 <div className="space-y-3 text-sm text-muted-foreground">
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <CheckCircle className="w-4 h-4 text-green-600" />
                     <span>Kartu Kredit/Debit (Visa, Mastercard)</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <CheckCircle className="w-4 h-4 text-green-600" />
                     <span>Transfer Bank (BCA, Mandiri, BNI, BRI)</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <CheckCircle className="w-4 h-4 text-green-600" />
                     <span>E-Wallet (GoPay, OVO, DANA, ShopeePay)</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <CheckCircle className="w-4 h-4 text-green-600" />
                     <span>Minimarket (Alfamart, Indomaret)</span>
                   </div>
                 </div>
@@ -562,7 +780,7 @@ const SubscribePage = () => {
                   <>
                     {currentTier.price === 0 ? (
                       <>
-                        <CheckCircle2 className="w-5 h-5" />
+                        <CheckCircle className="w-5 h-5" />
                         Aktifkan Paket Gratis
                       </>
                     ) : (

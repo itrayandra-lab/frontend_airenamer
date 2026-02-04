@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Mail, 
   Lock, 
@@ -12,44 +13,264 @@ import {
   Shield, 
   Smartphone,
   Chrome,
-  Github,
-  Apple
+  User,
+  Phone,
+  Loader2,
+  CheckCircle,
+  XCircle
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { API_CONFIG, API_ENDPOINTS, apiPost, ApiResponse, AuthData } from "@/config/api";
 
 const LoginPage = () => {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<string>('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+  const [retryAfter, setRetryAfter] = useState<number>(0);
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    confirmPassword: "",
-    firstName: "",
-    lastName: "",
+    password_confirmation: "",
+    name: "",
+    phone: "",
     rememberMe: false,
-    agreeToTerms: false
+    agreeToTerms: false,
+    referral_code: ""
   });
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkAuthStatus = () => {
+      const token = localStorage.getItem('auth_token');
+      const userData = localStorage.getItem('user_data');
+      
+      if (token && userData) {
+        // Check if there's a redirect URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectUrl = urlParams.get('redirect');
+        
+        if (redirectUrl) {
+          // Redirect to the specified URL
+          window.location.href = decodeURIComponent(redirectUrl);
+        } else {
+          // Default redirect to dashboard
+          navigate('/dashboard');
+        }
+      }
+    };
+
+    checkAuthStatus();
+  }, [navigate]);
+
+  // Countdown timer for rate limiting
+  useEffect(() => {
+    if (retryAfter > 0) {
+      const timer = setInterval(() => {
+        setRetryAfter(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [retryAfter]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+    
+    // Clear field-specific errors when user starts typing
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateForm = (): boolean => {
+    const errors: Record<string, string[]> = {};
+
+    if (!formData.email) {
+      errors.email = ['Email is required'];
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = ['Please enter a valid email address'];
+    }
+
+    if (!formData.password) {
+      errors.password = ['Password is required'];
+    } else if (!isLogin && formData.password.length < 8) {
+      errors.password = ['Password must be at least 8 characters'];
+    }
+
+    if (!isLogin) {
+      if (!formData.name) {
+        errors.name = ['Name is required'];
+      } else if (formData.name.length < 2) {
+        errors.name = ['Name must be at least 2 characters'];
+      } else if (!/^[a-zA-Z\s]+$/.test(formData.name)) {
+        errors.name = ['Name can only contain letters and spaces'];
+      }
+
+      if (formData.password !== formData.password_confirmation) {
+        errors.password_confirmation = ['Passwords do not match'];
+      }
+
+      if (!formData.agreeToTerms) {
+        errors.terms = ['You must accept the terms and conditions'];
+      }
+
+      // Password strength validation
+      if (formData.password) {
+        const hasLower = /[a-z]/.test(formData.password);
+        const hasUpper = /[A-Z]/.test(formData.password);
+        const hasNumber = /\d/.test(formData.password);
+        const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(formData.password);
+
+        if (!hasLower || !hasUpper || !hasNumber || !hasSymbol) {
+          errors.password = ['Password must contain uppercase, lowercase, number, and symbol'];
+        }
+      }
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Placeholder untuk authentication logic
-    if (isLogin) {
-      alert(`Login attempt dengan email: ${formData.email}\nFitur autentikasi akan diimplementasikan!`);
-    } else {
-      alert(`Registrasi attempt dengan email: ${formData.email}\nFitur registrasi akan diimplementasikan!`);
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    if (retryAfter > 0 && import.meta.env.MODE !== 'development') {
+      setError(`Please wait ${retryAfter} seconds before trying again`);
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    setFieldErrors({});
+
+    try {
+      const endpoint = isLogin ? API_ENDPOINTS.AUTH.LOGIN : API_ENDPOINTS.AUTH.REGISTER;
+      const payload = isLogin ? {
+        email: formData.email.toLowerCase().trim(),
+        password: formData.password,
+        rememberMe: formData.rememberMe
+      } : {
+        name: formData.name.trim(),
+        email: formData.email.toLowerCase().trim(),
+        password: formData.password,
+        confirmPassword: formData.password_confirmation,
+        phone: formData.phone.trim() || null,
+        termsAccepted: formData.agreeToTerms,
+        privacyAccepted: formData.agreeToTerms,
+        referralCode: formData.referral_code.trim() || null,
+        marketingOptIn: false
+      };
+
+      const result: ApiResponse<AuthData> = await apiPost(endpoint, payload);
+
+      if (result.success && result.data) {
+        // Store authentication data
+        localStorage.setItem('auth_token', result.data.token);
+        localStorage.setItem('user_data', JSON.stringify(result.data.user));
+
+        setSuccess(result.message);
+
+        // Check for redirect URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectUrl = urlParams.get('redirect');
+
+        // Redirect based on user role and verification status
+        setTimeout(() => {
+          if (result.data?.verificationRequired) {
+            navigate('/verify-email');
+          } else if (redirectUrl) {
+            // Redirect to the specified URL
+            window.location.href = decodeURIComponent(redirectUrl);
+          } else if (result.data?.user.role === 'admin') {
+            navigate('/admin/dashboard');
+          } else {
+            navigate('/dashboard');
+          }
+        }, 1500);
+
+      } else {
+        // Handle different types of errors
+        if (result.retryAfter && import.meta.env.MODE !== 'development') {
+          setRetryAfter(result.retryAfter);
+          setError(result.message);
+        } else if (result.lockUntil) {
+          setError(`Account is locked. ${result.lockUntil ? `Try again after ${new Date(result.lockUntil).toLocaleString()}` : ''}`);
+        } else if (result.errors) {
+          // Convert Express-validator errors to our format
+          const fieldErrors: Record<string, string[]> = {};
+          result.errors.forEach(error => {
+            if (!fieldErrors[error.param]) {
+              fieldErrors[error.param] = [];
+            }
+            fieldErrors[error.param].push(error.msg);
+          });
+          setFieldErrors(fieldErrors);
+          setError('Please check the form for errors');
+        } else {
+          setError(result.message || 'Authentication failed');
+        }
+      }
+
+    } catch (err) {
+      console.error('Auth error:', err);
+      setError('Network error. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSocialLogin = (provider: string) => {
-    alert(`${provider} login akan diimplementasikan!`);
+    // Implement OAuth login
+    window.location.href = `${API_CONFIG.BACKEND_URL}/api/auth/${provider.toLowerCase()}`;
   };
+
+  const getPasswordStrength = (password: string): { strength: number; label: string; color: string } => {
+    if (!password) return { strength: 0, label: '', color: '' };
+
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (/[a-z]/.test(password)) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/\d/.test(password)) score++;
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) score++;
+
+    const levels = [
+      { strength: 0, label: '', color: '' },
+      { strength: 20, label: 'Very Weak', color: 'bg-red-500' },
+      { strength: 40, label: 'Weak', color: 'bg-orange-500' },
+      { strength: 60, label: 'Fair', color: 'bg-yellow-500' },
+      { strength: 80, label: 'Good', color: 'bg-blue-500' },
+      { strength: 100, label: 'Strong', color: 'bg-green-500' }
+    ];
+
+    return levels[score] || levels[0];
+  };
+
+  const passwordStrength = getPasswordStrength(formData.password);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background flex items-center justify-center p-4">
@@ -81,6 +302,30 @@ const LoginPage = () => {
           </p>
         </div>
 
+        {/* Status Messages */}
+        {error && (
+          <Alert className="mb-6 border-red-200 bg-red-50">
+            <XCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">
+              {error}
+              {retryAfter > 0 && import.meta.env.MODE !== 'development' && (
+                <div className="mt-2 text-sm">
+                  Retry in: {Math.floor(retryAfter / 60)}:{(retryAfter % 60).toString().padStart(2, '0')}
+                </div>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {success && (
+          <Alert className="mb-6 border-green-200 bg-green-50">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              {success}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Main Form Card */}
         <div className="file-card p-8 space-y-6">
           {/* Social Login */}
@@ -89,28 +334,11 @@ const LoginPage = () => {
               variant="outline" 
               className="w-full h-12 gap-3"
               onClick={() => handleSocialLogin('Google')}
+              disabled={loading}
             >
               <Chrome className="w-5 h-5" />
               {isLogin ? 'Masuk' : 'Daftar'} dengan Google
             </Button>
-            <div className="grid grid-cols-2 gap-3">
-              <Button 
-                variant="outline" 
-                className="h-12 gap-2"
-                onClick={() => handleSocialLogin('Apple')}
-              >
-                <Apple className="w-4 h-4" />
-                Apple
-              </Button>
-              <Button 
-                variant="outline" 
-                className="h-12 gap-2"
-                onClick={() => handleSocialLogin('GitHub')}
-              >
-                <Github className="w-4 h-4" />
-                GitHub
-              </Button>
-            </div>
           </div>
 
           <div className="relative">
@@ -122,31 +350,25 @@ const LoginPage = () => {
 
           {/* Email/Password Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Name Fields (Register only) */}
+            {/* Name Field (Register only) */}
             {!isLogin && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">Nama Depan</Label>
+              <div className="space-y-2">
+                <Label htmlFor="name">Nama Lengkap</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    id="firstName"
+                    id="name"
                     type="text"
-                    placeholder="John"
-                    value={formData.firstName}
-                    onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    required={!isLogin}
+                    placeholder="John Doe"
+                    className="pl-10"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    disabled={loading}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Nama Belakang</Label>
-                  <Input
-                    id="lastName"
-                    type="text"
-                    placeholder="Doe"
-                    value={formData.lastName}
-                    onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    required={!isLogin}
-                  />
-                </div>
+                {fieldErrors.name && (
+                  <p className="text-sm text-red-600">{fieldErrors.name[0]}</p>
+                )}
               </div>
             )}
 
@@ -162,10 +384,35 @@ const LoginPage = () => {
                   className="pl-10"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  required
+                  disabled={loading}
                 />
               </div>
+              {fieldErrors.email && (
+                <p className="text-sm text-red-600">{fieldErrors.email[0]}</p>
+              )}
             </div>
+
+            {/* Phone (Register only) */}
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="phone">Nomor Telepon (Opsional)</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="+62 812 3456 7890"
+                    className="pl-10"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                {fieldErrors.phone && (
+                  <p className="text-sm text-red-600">{fieldErrors.phone[0]}</p>
+                )}
+              </div>
+            )}
 
             {/* Password */}
             <div className="space-y-2">
@@ -179,39 +426,78 @@ const LoginPage = () => {
                   className="pl-10 pr-10"
                   value={formData.password}
                   onChange={(e) => handleInputChange('password', e.target.value)}
-                  required
+                  disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  disabled={loading}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {!isLogin && (
-                <p className="text-xs text-muted-foreground">
-                  Minimal 8 karakter dengan kombinasi huruf, angka, dan simbol
-                </p>
+              
+              {/* Password Strength Indicator (Register only) */}
+              {!isLogin && formData.password && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full transition-all duration-300 ${passwordStrength.color}`}
+                        style={{ width: `${passwordStrength.strength}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground">{passwordStrength.label}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Minimal 8 karakter dengan huruf besar, kecil, angka, dan simbol
+                  </p>
+                </div>
+              )}
+              
+              {fieldErrors.password && (
+                <p className="text-sm text-red-600">{fieldErrors.password[0]}</p>
               )}
             </div>
 
             {/* Confirm Password (Register only) */}
             {!isLogin && (
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Konfirmasi Password</Label>
+                <Label htmlFor="password_confirmation">Konfirmasi Password</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    id="confirmPassword"
+                    id="password_confirmation"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     className="pl-10"
-                    value={formData.confirmPassword}
-                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                    required={!isLogin}
+                    value={formData.password_confirmation}
+                    onChange={(e) => handleInputChange('password_confirmation', e.target.value)}
+                    disabled={loading}
                   />
                 </div>
+                {fieldErrors.password_confirmation && (
+                  <p className="text-sm text-red-600">{fieldErrors.password_confirmation[0]}</p>
+                )}
+              </div>
+            )}
+
+            {/* Referral Code (Register only) */}
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="referral_code">Kode Referral (Opsional)</Label>
+                <Input
+                  id="referral_code"
+                  type="text"
+                  placeholder="Masukkan kode referral"
+                  value={formData.referral_code}
+                  onChange={(e) => handleInputChange('referral_code', e.target.value.toUpperCase())}
+                  disabled={loading}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Dapatkan bonus dengan memasukkan kode referral dari teman
+                </p>
               </div>
             )}
 
@@ -224,35 +510,42 @@ const LoginPage = () => {
                       id="remember"
                       checked={formData.rememberMe}
                       onCheckedChange={(checked) => handleInputChange('rememberMe', checked as boolean)}
+                      disabled={loading}
                     />
                     <Label htmlFor="remember" className="text-sm">Ingat saya</Label>
                   </div>
                   <button
                     type="button"
                     className="text-sm text-primary hover:underline"
-                    onClick={() => alert('Fitur reset password akan diimplementasikan!')}
+                    onClick={() => navigate('/forgot-password')}
+                    disabled={loading}
                   >
                     Lupa password?
                   </button>
                 </div>
               ) : (
-                <div className="flex items-start space-x-2">
-                  <Checkbox 
-                    id="terms"
-                    checked={formData.agreeToTerms}
-                    onCheckedChange={(checked) => handleInputChange('agreeToTerms', checked as boolean)}
-                    required={!isLogin}
-                  />
-                  <Label htmlFor="terms" className="text-sm leading-relaxed">
-                    Saya setuju dengan{' '}
-                    <button type="button" className="text-primary hover:underline">
-                      Syarat & Ketentuan
-                    </button>{' '}
-                    dan{' '}
-                    <button type="button" className="text-primary hover:underline">
-                      Kebijakan Privasi
-                    </button>
-                  </Label>
+                <div className="space-y-2">
+                  <div className="flex items-start space-x-2">
+                    <Checkbox 
+                      id="terms"
+                      checked={formData.agreeToTerms}
+                      onCheckedChange={(checked) => handleInputChange('agreeToTerms', checked as boolean)}
+                      disabled={loading}
+                    />
+                    <Label htmlFor="terms" className="text-sm leading-relaxed">
+                      Saya setuju dengan{' '}
+                      <button type="button" className="text-primary hover:underline">
+                        Syarat & Ketentuan
+                      </button>{' '}
+                      dan{' '}
+                      <button type="button" className="text-primary hover:underline">
+                        Kebijakan Privasi
+                      </button>
+                    </Label>
+                  </div>
+                  {fieldErrors.terms && (
+                    <p className="text-sm text-red-600">{fieldErrors.terms[0]}</p>
+                  )}
                 </div>
               )}
             </div>
@@ -261,10 +554,19 @@ const LoginPage = () => {
             <Button 
               type="submit" 
               className="w-full h-12 text-lg font-semibold gradient-primary btn-primary-glow gap-2"
-              disabled={!isLogin && !formData.agreeToTerms}
+              disabled={loading || (retryAfter > 0 && import.meta.env.MODE !== 'development') || (!isLogin && !formData.agreeToTerms)}
             >
-              {isLogin ? 'Masuk' : 'Buat Akun'}
-              <ArrowRight className="w-5 h-5" />
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  {isLogin ? 'Masuk...' : 'Membuat Akun...'}
+                </>
+              ) : (
+                <>
+                  {isLogin ? 'Masuk' : 'Buat Akun'}
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
             </Button>
           </form>
 
@@ -274,8 +576,24 @@ const LoginPage = () => {
               {isLogin ? 'Belum punya akun?' : 'Sudah punya akun?'}{' '}
               <button
                 type="button"
-                onClick={() => setIsLogin(!isLogin)}
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setError('');
+                  setSuccess('');
+                  setFieldErrors({});
+                  setFormData({
+                    email: "",
+                    password: "",
+                    password_confirmation: "",
+                    name: "",
+                    phone: "",
+                    rememberMe: false,
+                    agreeToTerms: false,
+                    referral_code: ""
+                  });
+                }}
                 className="text-primary hover:underline font-medium"
+                disabled={loading}
               >
                 {isLogin ? 'Daftar sekarang' : 'Masuk di sini'}
               </button>
@@ -314,8 +632,9 @@ const LoginPage = () => {
         <div className="mt-6 text-center">
           <Button 
             variant="ghost" 
-            onClick={() => window.history.back()}
+            onClick={() => navigate('/')}
             className="gap-2"
+            disabled={loading}
           >
             ← Kembali ke Beranda
           </Button>

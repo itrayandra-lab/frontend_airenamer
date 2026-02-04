@@ -209,7 +209,7 @@ Bisnis: Dedicated support 24/7, phone support, video call, onboarding, account m
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.REACT_APP_GROQ_API_KEY}`
+          'Authorization': `Bearer ${import.meta.env.VITE_GROQ_API_KEY}`
         },
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
