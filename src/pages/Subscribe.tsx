@@ -26,6 +26,7 @@ import {
   MapPin
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import logoImage from "/assets/img/logo_autofile.png";
 
 // Midtrans types
 declare global {
@@ -38,15 +39,15 @@ const customTiers = [
   { files: 0, price: 0, packageName: "Paket Gratis", packageType: "gratis" },
   { files: 25, price: 0, packageName: "Paket Gratis", packageType: "gratis" },
   { files: 50, price: 0, packageName: "Paket Gratis", packageType: "gratis" },
-  { files: 100, price: 75000, packageName: "Paket Pro", packageType: "pro" },
-  { files: 250, price: 120000, packageName: "Paket Pro", packageType: "pro" },
-  { files: 500, price: 180000, packageName: "Paket Pro", packageType: "pro" },
-  { files: 750, price: 240000, packageName: "Paket Pro", packageType: "pro" },
-  { files: 1000, price: 300000, packageName: "Paket Pro", packageType: "pro" },
-  { files: 1500, price: 450000, packageName: "Paket Bisnis", packageType: "bisnis" },
-  { files: 2500, price: 600000, packageName: "Paket Bisnis", packageType: "bisnis" },
-  { files: 5000, price: 900000, packageName: "Paket Bisnis", packageType: "bisnis" },
-  { files: 10000, price: 1500000, packageName: "Paket Bisnis", packageType: "bisnis" },
+  { files: 100, price: 25000, packageName: "Paket Pro", packageType: "pro" },
+  { files: 200, price: 49000, packageName: "Paket Pro", packageType: "pro" },
+  { files: 500, price: 99000, packageName: "Paket Pro", packageType: "pro" },
+  { files: 750, price: 135000, packageName: "Paket Pro", packageType: "pro" },
+  { files: 1000, price: 150000, packageName: "Paket Pro", packageType: "pro" },
+  { files: 1500, price: 210000, packageName: "Paket Bisnis", packageType: "bisnis" },
+  { files: 2500, price: 325000, packageName: "Paket Bisnis", packageType: "bisnis" },
+  { files: 5000, price: 600000, packageName: "Paket Bisnis", packageType: "bisnis" },
+  { files: 10000, price: 1100000, packageName: "Paket Bisnis", packageType: "bisnis" },
   { files: "Unlimited", price: 2000000, packageName: "Paket Bisnis", packageType: "bisnis" },
 ];
 
@@ -68,7 +69,6 @@ const SubscribePage = () => {
     address: "",
     city: "",
     postalCode: "",
-    agreeToTerms: false,
     subscribeNewsletter: true
   });
 
@@ -136,11 +136,6 @@ const SubscribePage = () => {
   };
 
   const handlePayment = async () => {
-    if (!customerData.agreeToTerms) {
-      alert('Harap setujui syarat dan ketentuan terlebih dahulu');
-      return;
-    }
-
     if (currentTier.price === 0) {
       // Handle free tier - use guest endpoint if not logged in
       try {
@@ -393,12 +388,13 @@ const SubscribePage = () => {
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-lg font-semibold">
-                <span className="bg-primary text-primary-foreground px-1.5 py-0.5 rounded">RAY</span>
-                <span className="text-foreground ml-1">MAIZING | autofile</span>
-              </span>
-            </div>
+            <a href="/" className="flex items-center hover:opacity-80 transition-opacity">
+              <img 
+                src={logoImage} 
+                alt="Raymaizing Logo" 
+                className="h-10 w-auto object-contain"
+              />
+            </a>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Shield className="w-4 h-4 text-green-600" />
@@ -456,7 +452,7 @@ const SubscribePage = () => {
                     <AccordionContent className="space-y-4 pt-4">
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-2">
-                          <Label htmlFor="firstName">Nama Depan *</Label>
+                          <Label htmlFor="firstName" className="text-foreground">Nama Depan *</Label>
                           <Input
                             id="firstName"
                             value={customerData.firstName}
@@ -464,11 +460,11 @@ const SubscribePage = () => {
                             placeholder="John"
                             required
                             readOnly={isLoggedIn}
-                            className={isLoggedIn ? "bg-gray-50 cursor-default" : ""}
+                            className={isLoggedIn ? "bg-muted cursor-default text-foreground" : "text-foreground"}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="lastName">Nama Belakang *</Label>
+                          <Label htmlFor="lastName" className="text-foreground">Nama Belakang *</Label>
                           <Input
                             id="lastName"
                             value={customerData.lastName}
@@ -476,13 +472,13 @@ const SubscribePage = () => {
                             placeholder="Doe"
                             required
                             readOnly={isLoggedIn}
-                            className={isLoggedIn ? "bg-gray-50 cursor-default" : ""}
+                            className={isLoggedIn ? "bg-muted cursor-default text-foreground" : "text-foreground"}
                           />
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="email">Email *</Label>
+                        <Label htmlFor="email" className="text-foreground">Email *</Label>
                         <Input
                           id="email"
                           type="email"
@@ -491,12 +487,12 @@ const SubscribePage = () => {
                           placeholder="john@example.com"
                           required
                           readOnly={isLoggedIn}
-                          className={isLoggedIn ? "bg-gray-50 cursor-default" : ""}
+                          className={isLoggedIn ? "bg-muted cursor-default text-foreground" : "text-foreground"}
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="phone">Nomor Telepon *</Label>
+                        <Label htmlFor="phone" className="text-foreground">Nomor Telepon *</Label>
                         <div className="relative">
                           <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                           <Input
@@ -504,7 +500,7 @@ const SubscribePage = () => {
                             value={customerData.phone}
                             onChange={(e) => handleInputChange('phone', e.target.value)}
                             placeholder="+62 812 3456 7890"
-                            className={`pl-10 ${isLoggedIn ? "bg-gray-50 cursor-default" : ""}`}
+                            className={`pl-10 ${isLoggedIn ? "bg-muted cursor-default text-foreground" : "text-foreground"}`}
                             required
                             readOnly={isLoggedIn}
                           />
@@ -512,7 +508,7 @@ const SubscribePage = () => {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="company">Nama Perusahaan (Opsional)</Label>
+                        <Label htmlFor="company" className="text-foreground">Nama Perusahaan (Opsional)</Label>
                         <div className="relative">
                           <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                           <Input
@@ -520,7 +516,7 @@ const SubscribePage = () => {
                             value={customerData.company}
                             onChange={(e) => handleInputChange('company', e.target.value)}
                             placeholder="PT. Contoh Indonesia"
-                            className={`pl-10 ${isLoggedIn ? "bg-gray-50 cursor-default" : ""}`}
+                            className={`pl-10 ${isLoggedIn ? "bg-muted cursor-default text-foreground" : "text-foreground"}`}
                             readOnly={isLoggedIn}
                           />
                         </div>
@@ -538,7 +534,7 @@ const SubscribePage = () => {
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 pt-4">
                       <div className="space-y-2">
-                        <Label htmlFor="address">Alamat Lengkap *</Label>
+                        <Label htmlFor="address" className="text-foreground">Alamat Lengkap *</Label>
                         <Input
                           id="address"
                           value={customerData.address}
@@ -546,13 +542,13 @@ const SubscribePage = () => {
                           placeholder="Jl. Contoh No. 123"
                           required
                           readOnly={isLoggedIn}
-                          className={isLoggedIn ? "bg-gray-50 cursor-default" : ""}
+                          className={isLoggedIn ? "bg-muted cursor-default text-foreground" : "text-foreground"}
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-2">
-                          <Label htmlFor="city">Kota *</Label>
+                          <Label htmlFor="city" className="text-foreground">Kota *</Label>
                           <Input
                             id="city"
                             value={customerData.city}
@@ -560,11 +556,11 @@ const SubscribePage = () => {
                             placeholder="Jakarta"
                             required
                             readOnly={isLoggedIn}
-                            className={isLoggedIn ? "bg-gray-50 cursor-default" : ""}
+                            className={isLoggedIn ? "bg-muted cursor-default text-foreground" : "text-foreground"}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="postalCode">Kode Pos *</Label>
+                          <Label htmlFor="postalCode" className="text-foreground">Kode Pos *</Label>
                           <Input
                             id="postalCode"
                             value={customerData.postalCode}
@@ -572,7 +568,7 @@ const SubscribePage = () => {
                             placeholder="12345"
                             required
                             readOnly={isLoggedIn}
-                            className={isLoggedIn ? "bg-gray-50 cursor-default" : ""}
+                            className={isLoggedIn ? "bg-muted cursor-default text-foreground" : "text-foreground"}
                           />
                         </div>
                       </div>
@@ -583,19 +579,19 @@ const SubscribePage = () => {
 
               {/* Login Prompt for Non-logged Users Only */}
               {!isLoggedIn && (
-                <div className="file-card p-6 bg-blue-50 border-blue-200">
+                <div className="file-card p-6 bg-blue-500/10 border-blue-500/30">
                   <div className="flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                    <AlertCircle className="w-5 h-5 text-blue-400 mt-0.5" />
                     <div className="flex-1">
-                      <p className="font-medium text-blue-700 mb-2">Sudah punya akun?</p>
-                      <p className="text-blue-600 text-sm mb-3">
+                      <p className="font-medium text-blue-300 mb-2">Sudah punya akun?</p>
+                      <p className="text-blue-400 text-sm mb-3">
                         Login untuk mengisi informasi secara otomatis dan mempercepat proses pembayaran.
                       </p>
                       <Button 
                         variant="outline" 
                         size="sm"
                         onClick={() => window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`}
-                        className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                        className="border-blue-500/50 text-blue-300 hover:bg-blue-500/20"
                       >
                         Login Sekarang
                       </Button>
@@ -604,34 +600,15 @@ const SubscribePage = () => {
                 </div>
               )}
 
-              {/* Terms and Newsletter */}
+              {/* Newsletter Only */}
               <div className="file-card p-6 space-y-4">
-                <div className="flex items-start space-x-3">
-                  <Checkbox 
-                    id="terms"
-                    checked={customerData.agreeToTerms}
-                    onCheckedChange={(checked) => handleInputChange('agreeToTerms', checked as boolean)}
-                    required
-                  />
-                  <Label htmlFor="terms" className="text-sm leading-relaxed">
-                    Saya setuju dengan{' '}
-                    <button type="button" className="text-primary hover:underline">
-                      Syarat & Ketentuan
-                    </button>{' '}
-                    dan{' '}
-                    <button type="button" className="text-primary hover:underline">
-                      Kebijakan Privasi
-                    </button>
-                  </Label>
-                </div>
-
                 <div className="flex items-start space-x-3">
                   <Checkbox 
                     id="newsletter"
                     checked={customerData.subscribeNewsletter}
                     onCheckedChange={(checked) => handleInputChange('subscribeNewsletter', checked as boolean)}
                   />
-                  <Label htmlFor="newsletter" className="text-sm leading-relaxed">
+                  <Label htmlFor="newsletter" className="text-sm leading-relaxed text-foreground">
                     Saya ingin menerima update produk dan penawaran khusus via email
                   </Label>
                 </div>
@@ -699,11 +676,6 @@ const SubscribePage = () => {
                         <span>-Rp{savings.toLocaleString()}</span>
                       </div>
                     )}
-                    
-                    <div className="flex justify-between text-sm">
-                      <span>PPN (11%):</span>
-                      <span>Rp{Math.round((isAnnual ? totalPrice : displayPrice) * 0.11).toLocaleString()}</span>
-                    </div>
                   </div>
 
                   <Separator />
@@ -712,7 +684,7 @@ const SubscribePage = () => {
                   <div className="flex justify-between text-lg font-semibold">
                     <span>Total:</span>
                     <span className="text-primary">
-                      Rp{Math.round((isAnnual ? totalPrice : displayPrice) * 1.11).toLocaleString()}
+                      Rp{(isAnnual ? totalPrice : displayPrice).toLocaleString()}
                     </span>
                   </div>
 
@@ -768,7 +740,7 @@ const SubscribePage = () => {
               {/* Payment Button */}
               <Button 
                 onClick={handlePayment}
-                disabled={isProcessing || !customerData.agreeToTerms || currentTier.price === 0 ? false : (!customerData.firstName || !customerData.lastName || !customerData.email || !customerData.phone)}
+                disabled={isProcessing || (currentTier.price === 0 ? false : (!customerData.firstName || !customerData.lastName || !customerData.email || !customerData.phone))}
                 className="w-full h-14 text-lg font-semibold gradient-primary btn-primary-glow gap-2"
               >
                 {isProcessing ? (

@@ -30,6 +30,10 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { API_CONFIG, API_ENDPOINTS, apiGet, apiPost } from '@/config/api';
 import CompleteProfileModal from '@/components/CompleteProfileModal';
+import ChangePasswordModal from '@/components/ChangePasswordModal';
+import ResetPasswordModal from '@/components/ResetPasswordModal';
+import { useTheme } from 'next-themes';
+import './Dashboard.css';
 
 interface UserData {
   id: number;
@@ -75,6 +79,7 @@ interface UsageData {
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { setTheme } = useTheme();
   const [user, setUser] = useState<UserData | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [usage, setUsage] = useState<UsageData | null>(null);
@@ -82,8 +87,20 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [showCompleteProfileModal, setShowCompleteProfileModal] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+
+  // Force dark mode for dashboard
+  useEffect(() => {
+    setTheme('dark');
+    
+    // Cleanup: return to dark mode when leaving dashboard (tetap dark)
+    return () => {
+      setTheme('dark');
+    };
+  }, [setTheme]);
 
   useEffect(() => {
     loadUserData();
@@ -212,10 +229,10 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading dashboard...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -223,9 +240,9 @@ const Dashboard: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 mb-4">Unable to load user data</p>
+          <p className="text-muted-foreground mb-4">Unable to load user data</p>
           <Button onClick={() => navigate('/login')}>
             Go to Login
           </Button>
@@ -236,10 +253,10 @@ const Dashboard: React.FC = () => {
 
   const getSubscriptionBadgeColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'expired': return 'bg-red-100 text-red-800';
-      case 'cancelled': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-yellow-100 text-yellow-800';
+      case 'active': return 'bg-green-500/20 text-green-400 border border-green-500/50';
+      case 'expired': return 'bg-red-500/20 text-red-400 border border-red-500/50';
+      case 'cancelled': return 'bg-gray-500/20 text-gray-400 border border-gray-500/50';
+      default: return 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50';
     }
   };
 
@@ -249,20 +266,22 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background dashboard-dark">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-card/50 backdrop-blur-md shadow-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+              <img 
+                src="/assets/img/logo_autofile.png" 
+                alt="RAYMAIZING | autofile" 
+                className="h-10 cursor-pointer"
+                onClick={() => navigate('/')}
+              />
             </div>
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="sm">
                 <Bell className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Settings className="h-4 w-4" />
               </Button>
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
@@ -276,14 +295,14 @@ const Dashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Message */}
         <div className="mb-6">
-          <h2 className="text-3xl font-bold text-gray-900">Selamat datang kembali, {user.first_name} {user.last_name}!</h2>
-          <p className="text-gray-600 mt-1">Berikut adalah aktivitas akun Anda hari ini.</p>
+          <h2 className="text-3xl font-bold text-foreground">Selamat datang kembali, {user.first_name} {user.last_name}!</h2>
+          <p className="text-muted-foreground mt-1">Berikut adalah aktivitas akun Anda hari ini.</p>
         </div>
         {/* Error Alert */}
         {error && (
-          <Alert className="mb-6 border-red-200 bg-red-50">
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">
+          <Alert className="mb-6 border-red-500/50 bg-red-500/10">
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+            <AlertDescription className="text-red-400">
               {error}
             </AlertDescription>
           </Alert>
@@ -291,13 +310,13 @@ const Dashboard: React.FC = () => {
 
         {/* Email Verification Alert */}
         {!user.email_verified && (
-          <Alert className="mb-6 border-yellow-200 bg-yellow-50">
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
-            <AlertDescription className="text-yellow-800">
+          <Alert className="mb-6 border-yellow-500/50 bg-yellow-500/10">
+            <AlertTriangle className="h-4 w-4 text-yellow-500" />
+            <AlertDescription className="text-yellow-400">
               Please verify your email address to access all features.
               <Button 
                 variant="link" 
-                className="p-0 ml-2 text-yellow-800 underline hover:text-yellow-900"
+                className="p-0 ml-2 text-yellow-400 underline hover:text-yellow-300"
                 onClick={handleResendVerification}
                 disabled={resendLoading || resendCooldown > 0}
               >
@@ -318,13 +337,13 @@ const Dashboard: React.FC = () => {
 
         {/* Profile Completion Alert */}
         {!user.profile_completed && (
-          <Alert className="mb-6 border-blue-200 bg-blue-50">
-            <AlertTriangle className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-800">
+          <Alert className="mb-6 border-blue-500/50 bg-blue-500/10">
+            <AlertTriangle className="h-4 w-4 text-blue-500" />
+            <AlertDescription className="text-blue-400">
               Complete your profile to get the most out of our services.
               <Button 
                 variant="link" 
-                className="p-0 ml-2 text-blue-800 underline"
+                className="p-0 ml-2 text-blue-400 underline hover:text-blue-300"
                 onClick={() => setShowCompleteProfileModal(true)}
               >
                 Complete profile
@@ -346,9 +365,9 @@ const Dashboard: React.FC = () => {
               <p className="text-xs text-muted-foreground">
                 dari {user?.monthly_limit || 0} bulan ini
               </p>
-              <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+              <div className="mt-2 w-full bg-muted rounded-full h-2">
                 <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
                   style={{ width: `${getUsagePercentage()}%` }}
                 />
               </div>
@@ -437,16 +456,6 @@ const Dashboard: React.FC = () => {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-xs font-medium text-gray-500">Nama Depan</label>
-                          <p className="text-sm text-gray-900">{user.first_name || '-'}</p>
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-gray-500">Nama Belakang</label>
-                          <p className="text-sm text-gray-900">{user.last_name || '-'}</p>
-                        </div>
-                      </div>
                       <div>
                         <label className="text-xs font-medium text-gray-500">Nama Lengkap</label>
                         <p className="text-sm text-gray-900">{user.first_name} {user.last_name}</p>
@@ -517,19 +526,19 @@ const Dashboard: React.FC = () => {
                       <AccordionContent className="space-y-3">
                         {user.billing_full_name && (
                           <div>
-                            <label className="text-xs font-medium text-gray-500">Nama Tagihan</label>
+                            <label className="text-xs font-medium text-gray-500">Nama Lengkap</label>
                             <p className="text-sm text-gray-900">{user.billing_full_name}</p>
                           </div>
                         )}
                         {user.billing_email && (
                           <div>
-                            <label className="text-xs font-medium text-gray-500">Email Tagihan</label>
+                            <label className="text-xs font-medium text-gray-500">Email</label>
                             <p className="text-sm text-gray-900">{user.billing_email}</p>
                           </div>
                         )}
                         {user.billing_phone && (
                           <div>
-                            <label className="text-xs font-medium text-gray-500">Telepon Tagihan</label>
+                            <label className="text-xs font-medium text-gray-500">Telepon</label>
                             <p className="text-sm text-gray-900">{user.billing_phone}</p>
                           </div>
                         )}
@@ -578,57 +587,21 @@ const Dashboard: React.FC = () => {
                           <p className="text-sm text-gray-900 font-mono">{user.referred_by}</p>
                         </div>
                       )}
-                      <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-medium text-gray-500">Anggota Sejak</label>
+                        <p className="text-sm text-gray-900 flex items-center gap-2">
+                          <Calendar className="h-3 w-3" />
+                          {new Date(user.created_at).toLocaleDateString('id-ID')}
+                        </p>
+                      </div>
+                      {user.last_login_at && (
                         <div>
-                          <label className="text-xs font-medium text-gray-500">Anggota Sejak</label>
-                          <p className="text-sm text-gray-900 flex items-center gap-2">
-                            <Calendar className="h-3 w-3" />
-                            {new Date(user.created_at).toLocaleDateString('id-ID')}
+                          <label className="text-xs font-medium text-gray-500">Login Terakhir</label>
+                          <p className="text-sm text-gray-900">
+                            {new Date(user.last_login_at).toLocaleDateString('id-ID')}
                           </p>
                         </div>
-                        {user.last_login_at && (
-                          <div>
-                            <label className="text-xs font-medium text-gray-500">Login Terakhir</label>
-                            <p className="text-sm text-gray-900">
-                              {new Date(user.last_login_at).toLocaleDateString('id-ID')}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-xs font-medium text-gray-500">Status Profil</label>
-                          <div className="flex items-center gap-2">
-                            {user.profile_completed ? (
-                              <>
-                                <CheckCircle className="h-3 w-3 text-green-600" />
-                                <span className="text-xs text-green-600">Lengkap</span>
-                              </>
-                            ) : (
-                              <>
-                                <AlertTriangle className="h-3 w-3 text-yellow-600" />
-                                <span className="text-xs text-yellow-600">Belum Lengkap</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-gray-500">Status Akun</label>
-                          <div className="flex items-center gap-2">
-                            {user.is_active ? (
-                              <>
-                                <CheckCircle className="h-3 w-3 text-green-600" />
-                                <span className="text-xs text-green-600">Aktif</span>
-                              </>
-                            ) : (
-                              <>
-                                <AlertTriangle className="h-3 w-3 text-red-600" />
-                                <span className="text-xs text-red-600">Tidak Aktif</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                      )}
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>
@@ -696,9 +669,6 @@ const Dashboard: React.FC = () => {
                       <Button variant="outline" onClick={() => navigate('/subscription/history')}>
                         Lihat Riwayat
                       </Button>
-                      <Button variant="outline" onClick={() => window.print()}>
-                        Cetak Invoice
-                      </Button>
                     </div>
                   </>
                 ) : (
@@ -748,24 +718,49 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center justify-between p-4 border rounded-lg opacity-50">
                   <div>
                     <h4 className="font-medium">Autentikasi Dua Faktor</h4>
                     <p className="text-sm text-gray-500">Tambahkan lapisan keamanan ekstra</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {user.two_factor_enabled ? (
-                      <>
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        <span className="text-sm text-green-600">Aktif</span>
-                      </>
-                    ) : (
-                      <>
-                        <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                        <Button size="sm" variant="outline">Aktifkan</Button>
-                      </>
-                    )}
+                    <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      disabled
+                    >
+                      Aktifkan
+                    </Button>
                   </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <h4 className="font-medium">Ubah Password</h4>
+                    <p className="text-sm text-gray-500">Perbarui password akun Anda</p>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setShowChangePasswordModal(true)}
+                  >
+                    Ubah Password
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <h4 className="font-medium">Reset Password</h4>
+                    <p className="text-sm text-gray-500">Kirim link reset password ke email</p>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setShowResetPasswordModal(true)}
+                  >
+                    Reset Password
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -782,6 +777,19 @@ const Dashboard: React.FC = () => {
           onProfileUpdated={handleProfileUpdated}
         />
       )}
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
+      />
+
+      {/* Reset Password Modal */}
+      <ResetPasswordModal
+        isOpen={showResetPasswordModal}
+        onClose={() => setShowResetPasswordModal(false)}
+        userEmail={user?.email}
+      />
     </div>
   );
 };

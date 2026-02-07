@@ -67,17 +67,17 @@ const SubscriptionHistory: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Active</Badge>;
+        return <Badge className="bg-green-500/20 text-green-400 border border-green-500/50"><CheckCircle className="w-3 h-3 mr-1" />Active</Badge>;
       case 'expired':
-        return <Badge className="bg-gray-100 text-gray-800"><Clock className="w-3 h-3 mr-1" />Expired</Badge>;
+        return <Badge className="bg-gray-500/20 text-gray-400 border border-gray-500/50"><Clock className="w-3 h-3 mr-1" />Expired</Badge>;
       case 'cancelled':
-        return <Badge className="bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" />Cancelled</Badge>;
+        return <Badge className="bg-red-500/20 text-red-400 border border-red-500/50"><XCircle className="w-3 h-3 mr-1" />Cancelled</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
+        return <Badge className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/50"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
       case 'failed':
-        return <Badge className="bg-red-100 text-red-800"><XCircle className="w-3 h-3 mr-1" />Failed</Badge>;
+        return <Badge className="bg-red-500/20 text-red-400 border border-red-500/50"><XCircle className="w-3 h-3 mr-1" />Failed</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
+        return <Badge className="bg-gray-500/20 text-gray-400 border border-gray-500/50">{status}</Badge>;
     }
   };
 
@@ -176,19 +176,19 @@ const SubscriptionHistory: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading subscription history...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading subscription history...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-card/50 backdrop-blur-sm shadow-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center h-16">
             <Button 
@@ -200,7 +200,7 @@ const SubscriptionHistory: React.FC = () => {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Dashboard
             </Button>
-            <h1 className="text-2xl font-bold text-gray-900">Subscription History</h1>
+            <h1 className="text-2xl font-bold text-foreground">Subscription History</h1>
           </div>
         </div>
       </header>
@@ -208,9 +208,9 @@ const SubscriptionHistory: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Error Alert */}
         {error && (
-          <Alert className="mb-6 border-red-200 bg-red-50">
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">
+          <Alert className="mb-6 border-red-500/50 bg-red-500/10">
+            <AlertTriangle className="h-4 w-4 text-red-400" />
+            <AlertDescription className="text-red-400">
               {error}
             </AlertDescription>
           </Alert>
@@ -218,11 +218,11 @@ const SubscriptionHistory: React.FC = () => {
 
         {/* Subscription History */}
         {subscriptions.length === 0 ? (
-          <Card>
+          <Card className="bg-card/50 border-border">
             <CardContent className="text-center py-12">
-              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Subscription History</h3>
-              <p className="text-gray-500 mb-6">You haven't made any subscription purchases yet.</p>
+              <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No Subscription History</h3>
+              <p className="text-muted-foreground mb-6">You haven't made any subscription purchases yet.</p>
               <Button onClick={() => navigate('/subscribe')}>
                 Browse Subscription Plans
               </Button>
@@ -231,28 +231,28 @@ const SubscriptionHistory: React.FC = () => {
         ) : (
           <div className="space-y-6">
             {subscriptions.map((subscription) => (
-              <Card key={subscription.id}>
+              <Card key={subscription.id} className="bg-card/50 border-border">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="flex items-center gap-2">
+                      <CardTitle className="flex items-center gap-2 text-foreground">
                         <CreditCard className="w-5 h-5" />
                         {subscription.name}
                         {subscription.is_upgrade && (
-                          <Badge variant="outline" className="ml-2">Upgrade</Badge>
+                          <Badge variant="outline" className="ml-2 border-primary/50 text-primary">Upgrade</Badge>
                         )}
                       </CardTitle>
-                      <CardDescription>
+                      <CardDescription className="text-muted-foreground">
                         Payment ID: {subscription.payment_id}
                       </CardDescription>
                     </div>
                     <div className="text-right">
                       {getStatusBadge(subscription.status)}
-                      <p className="text-lg font-semibold mt-1">
+                      <p className="text-lg font-semibold mt-1 text-foreground">
                         {formatPrice(subscription.price, subscription.currency)}
                       </p>
                       {subscription.original_price && subscription.original_price !== subscription.price && (
-                        <p className="text-sm text-gray-500 line-through">
+                        <p className="text-sm text-muted-foreground line-through">
                           {formatPrice(subscription.original_price, subscription.currency)}
                         </p>
                       )}
@@ -262,33 +262,33 @@ const SubscriptionHistory: React.FC = () => {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Billing Cycle</label>
-                      <p className="text-sm text-gray-900 capitalize">{subscription.billing_cycle}</p>
+                      <label className="text-sm font-medium text-muted-foreground">Billing Cycle</label>
+                      <p className="text-sm text-foreground capitalize">{subscription.billing_cycle}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-500">Created</label>
-                      <p className="text-sm text-gray-900 flex items-center gap-1">
+                      <label className="text-sm font-medium text-muted-foreground">Created</label>
+                      <p className="text-sm text-foreground flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         {formatDate(subscription.created_at)}
                       </p>
                     </div>
                     {subscription.activated_at && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Activated</label>
-                        <p className="text-sm text-gray-900">{formatDate(subscription.activated_at)}</p>
+                        <label className="text-sm font-medium text-muted-foreground">Activated</label>
+                        <p className="text-sm text-foreground">{formatDate(subscription.activated_at)}</p>
                       </div>
                     )}
                     {subscription.expires_at && (
                       <div>
-                        <label className="text-sm font-medium text-gray-500">Expires</label>
-                        <p className="text-sm text-gray-900">{formatDate(subscription.expires_at)}</p>
+                        <label className="text-sm font-medium text-muted-foreground">Expires</label>
+                        <p className="text-sm text-foreground">{formatDate(subscription.expires_at)}</p>
                       </div>
                     )}
                   </div>
 
                   {subscription.cancelled_at && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-sm text-red-800">
+                    <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg">
+                      <p className="text-sm text-red-400">
                         <strong>Cancelled:</strong> {formatDate(subscription.cancelled_at)}
                         {subscription.cancellation_reason && (
                           <span className="block mt-1">Reason: {subscription.cancellation_reason}</span>
@@ -298,8 +298,8 @@ const SubscriptionHistory: React.FC = () => {
                   )}
 
                   {subscription.prorated_credit && subscription.prorated_credit > 0 && (
-                    <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-sm text-green-800">
+                    <div className="mb-4 p-3 bg-green-500/10 border border-green-500/50 rounded-lg">
+                      <p className="text-sm text-green-400">
                         <strong>Prorated Credit:</strong> {formatPrice(subscription.prorated_credit, subscription.currency)}
                       </p>
                     </div>

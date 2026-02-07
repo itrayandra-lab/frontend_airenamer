@@ -1,0 +1,40 @@
+/* Dashboard Dark Mode Overrides */
+.dashboard-dark label {
+  @apply text-muted-foreground;
+}
+
+.dashboard-dark p {
+  @apply text-foreground;
+}
+
+.dashboard-dark .text-gray-500 {
+  @apply text-muted-foreground;
+}
+
+.dashboard-dark .text-gray-900 {
+  @apply text-foreground;
+}
+
+.dashboard-dark .text-gray-600 {
+  @apply text-muted-foreground;
+}
+
+.dashboard-dark .bg-gray-100 {
+  @apply bg-muted;
+}
+
+.dashboard-dark .text-green-600 {
+  @apply text-green-500;
+}
+
+.dashboard-dark .text-yellow-600 {
+  @apply text-yellow-500;
+}
+
+.dashboard-dark .text-red-600 {
+  @apply text-red-500;
+}
+
+.dashboard-dark .text-blue-600 {
+  @apply text-blue-500;
+}

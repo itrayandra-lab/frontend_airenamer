@@ -11,17 +11,17 @@ const customTiers = [
   { files: 50, price: 0, packageName: "Paket Gratis", packageType: "gratis" },
   
   // Paket Pro (51-1000 files)
-  { files: 100, price: 75000, packageName: "Paket Pro", packageType: "pro" },
-  { files: 250, price: 120000, packageName: "Paket Pro", packageType: "pro" },
-  { files: 500, price: 180000, packageName: "Paket Pro", packageType: "pro" },
-  { files: 750, price: 240000, packageName: "Paket Pro", packageType: "pro" },
-  { files: 1000, price: 300000, packageName: "Paket Pro", packageType: "pro" },
+  { files: 100, price: 25000, packageName: "Paket Pro", packageType: "pro" },
+  { files: 200, price: 49000, packageName: "Paket Pro", packageType: "pro" },
+  { files: 500, price: 99000, packageName: "Paket Pro", packageType: "pro" },
+  { files: 750, price: 135000, packageName: "Paket Pro", packageType: "pro" },
+  { files: 1000, price: 150000, packageName: "Paket Pro", packageType: "pro" },
   
   // Paket Bisnis (1000+ files)
-  { files: 1500, price: 450000, packageName: "Paket Bisnis", packageType: "bisnis" },
-  { files: 2500, price: 600000, packageName: "Paket Bisnis", packageType: "bisnis" },
-  { files: 5000, price: 900000, packageName: "Paket Bisnis", packageType: "bisnis" },
-  { files: 10000, price: 1500000, packageName: "Paket Bisnis", packageType: "bisnis" },
+  { files: 1500, price: 210000, packageName: "Paket Bisnis", packageType: "bisnis" },
+  { files: 2500, price: 325000, packageName: "Paket Bisnis", packageType: "bisnis" },
+  { files: 5000, price: 600000, packageName: "Paket Bisnis", packageType: "bisnis" },
+  { files: 10000, price: 1100000, packageName: "Paket Bisnis", packageType: "bisnis" },
   { files: "Unlimited", price: 2000000, packageName: "Paket Bisnis", packageType: "bisnis" },
 ];
 

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -10,94 +10,104 @@
   }
   
   :root {
-    --background: 220 20% 97%;
-    --foreground: 222 47% 11%;
+    /* Raymaizing Light Mode - Minimal usage, mostly for fallback */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 0 0% 10%;
 
-    --primary: 217 91% 60%;
+    /* Primary: Raymaizing Purple/Indigo - rgb(79, 70, 229) */
+    --primary: 243 75% 59%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 10%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 217 91% 60%;
+    --accent: 243 75% 59%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 217 91% 60%;
+    --border: 0 0% 91%;
+    --input: 0 0% 91%;
+    --ring: 243 75% 59%;
 
     --radius: 0.75rem;
 
-    /* Custom tokens - Vibrant Blue theme */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(199 89% 48%) 100%);
-    --gradient-text: linear-gradient(90deg, hsl(222 47% 11%) 0%, hsl(217 91% 60%) 50%, hsl(199 89% 48%) 100%);
-    --shadow-card: 0 4px 20px -4px hsla(217, 91%, 60%, 0.15);
-    --shadow-button: 0 4px 14px 0 hsla(217, 91%, 60%, 0.39);
+    /* Custom tokens - Raymaizing theme */
+    --gradient-primary: linear-gradient(135deg, hsl(243 75% 59%) 0%, hsl(271 76% 53%) 100%);
+    --gradient-text: linear-gradient(90deg, hsl(243 75% 59%) 0%, hsl(271 76% 53%) 100%);
+    --shadow-card: 0 8px 32px hsla(0, 0%, 0%, 0.3);
+    --shadow-button: 0 4px 14px 0 hsla(243, 75%, 59%, 0.39);
     
-    --file-pdf: 217 91% 60%;
-    --file-doc: 199 89% 48%;
+    --file-pdf: 243 75% 59%;
+    --file-doc: 271 76% 53%;
     --file-txt: 142 71% 45%;
     --file-ppt: 25 95% 53%;
     --file-img: 330 80% 60%;
 
     --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-foreground: 0 0% 10%;
+    --sidebar-primary: 243 75% 59%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 91%;
+    --sidebar-ring: 243 75% 59%;
   }
 
   .dark {
-    --background: 217 30% 6%;
-    --foreground: 210 40% 98%;
+    /* Raymaizing Dark Mode - Primary theme */
+    /* Background: Deep dark blue-black #0a0a0f to #1a1a2e */
+    --background: 240 29% 6%;
+    --foreground: 0 0% 100%;
 
-    --card: 217 30% 10%;
-    --card-foreground: 210 40% 98%;
+    /* Cards: Glass morphism effect rgba(255, 255, 255, 0.04) */
+    --card: 240 20% 10%;
+    --card-foreground: 0 0% 100%;
 
-    --popover: 217 30% 10%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 240 20% 10%;
+    --popover-foreground: 0 0% 100%;
 
+    /* Primary: Blue instead of Purple - rgb(59, 130, 246) */
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
+    /* Secondary: Darker blue tones */
+    --secondary: 240 20% 15%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 217 20% 65%;
+    /* Muted: Gray tones from Raymaizing */
+    --muted: 240 15% 20%;
+    --muted-foreground: 0 0% 70%;
 
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
+    /* Accent: Lighter blue - rgb(96, 165, 250) */
+    --accent: 217 91% 68%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 217 27% 84%;
+    /* Borders: Subtle white overlay rgba(255, 255, 255, 0.1) */
+    --border: 240 15% 20%;
+    --input: 240 15% 20%;
+    --ring: 217 91% 60%;
     
-    --sidebar-background: 217 30% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 217 76% 48%;
+    --sidebar-background: 240 20% 10%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 30% 15%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 217 30% 15%;
+    --sidebar-accent: 240 20% 15%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 240 15% 20%;
     --sidebar-ring: 217 91% 60%;
   }
 }
@@ -109,7 +119,31 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', sans-serif;
+    font-family: 'GT Walsheim Pro', 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(180deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%);
+    z-index: -2;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
+    border-radius: 50%;
+    filter: blur(60px);
+    z-index: -1;
+    pointer-events: none;
   }
 
   .font-mono {
@@ -119,58 +153,76 @@
 
 @layer components {
   .gradient-text {
-    background: var(--gradient-text);
+    background: linear-gradient(90deg, hsl(217 91% 60%) 0%, hsl(217 91% 68%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .gradient-primary {
-    background: var(--gradient-primary);
+    background: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(217 91% 68%) 100%);
   }
 
   .file-card {
-    @apply rounded-xl bg-card border border-border shadow-sm transition-all duration-300;
-    box-shadow: var(--shadow-card);
+    @apply rounded-xl border transition-all duration-300;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
   .file-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px -8px hsla(217, 91%, 60%, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(59, 130, 246, 0.4);
+    box-shadow: 0 12px 40px rgba(59, 130, 246, 0.2);
   }
 
   .btn-primary-glow {
-    box-shadow: var(--shadow-button);
+    box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
   }
 
   .btn-primary-glow:hover {
-    box-shadow: 0 6px 20px 0 hsla(217, 91%, 60%, 0.5);
+    box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.5);
   }
 
   .upload-zone {
-    @apply border-2 border-dashed border-border rounded-2xl transition-all duration-300;
+    @apply border-2 border-dashed rounded-2xl transition-all duration-300;
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.02);
   }
 
   .upload-zone:hover {
-    @apply border-primary bg-primary/5;
+    border-color: rgba(59, 130, 246, 0.6);
+    background: rgba(59, 130, 246, 0.05);
   }
 
   .pricing-card {
-    @apply rounded-2xl bg-card border border-border p-6 transition-all duration-300;
+    @apply rounded-2xl border p-6 transition-all duration-300;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
   }
 
   .pricing-card:hover {
     @apply shadow-lg;
     transform: translateY(-4px);
+    background: rgba(255, 255, 255, 0.06);
   }
 
   .pricing-card.featured {
-    @apply border-primary ring-2 ring-primary/20;
-    background: linear-gradient(135deg, hsl(217 91% 60% / 0.05) 0%, hsl(199 89% 48% / 0.1) 100%);
+    @apply ring-2;
+    border-color: rgba(59, 130, 246, 0.4);
+    ring-color: rgba(59, 130, 246, 0.2);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(96, 165, 250, 0.1) 100%);
   }
 
   .testimonial-card {
-    @apply rounded-xl bg-card border border-border p-6;
+    @apply rounded-xl border p-6;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
   }
 
   .feature-badge {
@@ -256,7 +308,18 @@
   }
 
   .glass-card {
-    @apply bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl;
+    @apply bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .glass-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(59, 130, 246, 0.4);
+    box-shadow: 
+      0 20px 60px rgba(59, 130, 246, 0.3),
+      0 0 40px rgba(96, 165, 250, 0.2);
   }
 }
 

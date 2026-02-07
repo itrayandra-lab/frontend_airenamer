@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Download, Monitor, Apple, Smartphone, Globe, CheckCircle2, Shield, Zap, Users } from "lucide-react";
+import { Download, Monitor, Apple, Globe, CheckCircle2, Shield, Zap, Users } from "lucide-react";
 import { useState } from "react";
 
 const DownloadPage = () => {
@@ -10,31 +10,21 @@ const DownloadPage = () => {
       id: "windows",
       name: "Windows",
       icon: Monitor,
-      version: "v2.1.0",
+      version: "v1.0.0",
       size: "45.2 MB",
       requirements: "Windows 10/11 (64-bit)",
       downloadUrl: "#", // Akan diisi dengan link download yang sebenarnya
-      features: ["Instalasi mudah", "Auto-update", "Offline mode", "Integrasi Windows Explorer"]
+      features: ["Instalasi mudah", "Auto-update", "Fast Search", "Integrasi Windows Explorer"]
     },
     {
       id: "mac",
       name: "macOS",
       icon: Apple,
-      version: "v2.1.0",
+      version: "v1.0.0",
       size: "52.8 MB",
       requirements: "macOS 10.15+ (Intel/Apple Silicon)",
       downloadUrl: "#",
-      features: ["Native Apple Silicon", "Finder integration", "Spotlight search", "Touch Bar support"]
-    },
-    {
-      id: "mobile",
-      name: "Mobile App",
-      icon: Smartphone,
-      version: "v1.5.0",
-      size: "28.4 MB",
-      requirements: "Android 8.0+ / iOS 13.0+",
-      downloadUrl: "#",
-      features: ["Cloud sync", "Camera integration", "Offline processing", "Touch gestures"]
+      features: ["Native Apple Silicon", "Finder integration", "Fast Search", "Touch Bar support"]
     },
     {
       id: "web",
@@ -44,7 +34,7 @@ const DownloadPage = () => {
       size: "Browser-based",
       requirements: "Chrome, Firefox, Safari, Edge",
       downloadUrl: "#",
-      features: ["No installation", "Cross-platform", "Real-time collaboration", "Cloud storage"]
+      features: ["Tanpa instalasi", "Cross-platform", "Kolaborasi real-time", "Cloud storage"]
     }
   ];
 
@@ -79,7 +69,7 @@ const DownloadPage = () => {
         </div>
 
         {/* Platform Selection */}
-        <div className="grid md:grid-cols-4 gap-4 mb-12">
+        <div className="grid md:grid-cols-3 gap-4 mb-12">
           {platforms.map((platform) => (
             <button
               key={platform.id}
@@ -207,29 +197,29 @@ const DownloadPage = () => {
                 <div className="flex items-start gap-2">
                   <div className="w-2 h-2 rounded-full bg-purple-600 mt-2"></div>
                   <div>
-                    <p className="font-medium">AI Engine v3.0</p>
-                    <p className="text-muted-foreground">Peningkatan akurasi penamaan hingga 95%</p>
+                    <p className="font-medium">AI Engine v1.0</p>
+                    <p className="text-muted-foreground">Akurasi penamaan file hingga 90%</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="w-2 h-2 rounded-full bg-purple-600 mt-2"></div>
                   <div>
                     <p className="font-medium">Batch Processing</p>
-                    <p className="text-muted-foreground">Proses hingga 10,000 file sekaligus</p>
+                    <p className="text-muted-foreground">Proses hingga 5,000 file sekaligus</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="w-2 h-2 rounded-full bg-purple-600 mt-2"></div>
                   <div>
-                    <p className="font-medium">Smart Templates</p>
-                    <p className="text-muted-foreground">Template penamaan yang lebih cerdas</p>
+                    <p className="font-medium">Fast Search</p>
+                    <p className="text-muted-foreground">Pencarian file yang cepat dan akurat</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="w-2 h-2 rounded-full bg-purple-600 mt-2"></div>
                   <div>
-                    <p className="font-medium">Performance Boost</p>
-                    <p className="text-muted-foreground">Kecepatan pemrosesan 3x lebih cepat</p>
+                    <p className="font-medium">Performance Optimized</p>
+                    <p className="text-muted-foreground">Dibangun dengan Flutter untuk performa maksimal</p>
                   </div>
                 </div>
               </div>
@@ -244,7 +234,7 @@ const DownloadPage = () => {
                     <p>• Windows 10 atau Windows 11 (64-bit)</p>
                     <p>• RAM: 4 GB minimum, 8 GB direkomendasikan</p>
                     <p>• Storage: 500 MB ruang kosong</p>
-                    <p>• .NET Framework 4.8 atau lebih baru</p>
+                    <p>• Dibangun dengan Flutter untuk performa optimal</p>
                   </>
                 )}
                 {selectedPlatform === "mac" && (
@@ -253,14 +243,6 @@ const DownloadPage = () => {
                     <p>• RAM: 4 GB minimum, 8 GB direkomendasikan</p>
                     <p>• Storage: 600 MB ruang kosong</p>
                     <p>• Compatible dengan Intel dan Apple Silicon</p>
-                  </>
-                )}
-                {selectedPlatform === "mobile" && (
-                  <>
-                    <p>• Android 8.0+ atau iOS 13.0+</p>
-                    <p>• RAM: 2 GB minimum</p>
-                    <p>• Storage: 100 MB ruang kosong</p>
-                    <p>• Koneksi internet untuk fitur cloud</p>
                   </>
                 )}
                 {selectedPlatform === "web" && (

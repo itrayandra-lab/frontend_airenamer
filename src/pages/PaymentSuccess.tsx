@@ -113,8 +113,9 @@ const PaymentSuccess: React.FC = () => {
         title: 'Pembayaran Berhasil!',
         message: 'Terima kasih! Pembayaran Anda telah berhasil dan langganan telah diaktifkan.',
         color: 'green',
-        bgColor: 'bg-green-50',
-        borderColor: 'border-green-200'
+        bgColor: 'bg-green-500/10',
+        borderColor: 'border-green-500/50',
+        textColor: 'text-green-400'
       };
     }
 
@@ -124,8 +125,9 @@ const PaymentSuccess: React.FC = () => {
         title: 'Pembayaran Sedang Diproses',
         message: 'Transaksi Anda sedang diproses. Kami akan mengirim konfirmasi via email setelah pembayaran berhasil.',
         color: 'yellow',
-        bgColor: 'bg-yellow-50',
-        borderColor: 'border-yellow-200'
+        bgColor: 'bg-yellow-500/10',
+        borderColor: 'border-yellow-500/50',
+        textColor: 'text-yellow-400'
       };
     }
 
@@ -135,8 +137,9 @@ const PaymentSuccess: React.FC = () => {
         title: 'Pembayaran Berhasil!',
         message: 'Terima kasih! Pembayaran Anda telah berhasil dan langganan telah diaktifkan.',
         color: 'green',
-        bgColor: 'bg-green-50',
-        borderColor: 'border-green-200'
+        bgColor: 'bg-green-500/10',
+        borderColor: 'border-green-500/50',
+        textColor: 'text-green-400'
       };
     }
 
@@ -146,8 +149,9 @@ const PaymentSuccess: React.FC = () => {
         title: 'Pembayaran Gagal',
         message: 'Pembayaran tidak dapat diproses. Silakan coba lagi atau hubungi customer service.',
         color: 'red',
-        bgColor: 'bg-red-50',
-        borderColor: 'border-red-200'
+        bgColor: 'bg-red-500/10',
+        borderColor: 'border-red-500/50',
+        textColor: 'text-red-400'
       };
     }
 
@@ -156,8 +160,9 @@ const PaymentSuccess: React.FC = () => {
       title: 'Mengecek Status...',
       message: 'Sedang mengecek status pembayaran Anda.',
       color: 'blue',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-blue-200'
+      bgColor: 'bg-blue-500/10',
+      borderColor: 'border-blue-500/50',
+      textColor: 'text-blue-400'
     };
   };
 
@@ -175,12 +180,12 @@ const PaymentSuccess: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md bg-red-500/10 border-red-500/50">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               <XCircle className="w-16 h-16 text-red-500" />
             </div>
-            <CardTitle className="text-red-700">Terjadi Kesalahan</CardTitle>
+            <CardTitle className="text-red-400">Terjadi Kesalahan</CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-muted-foreground">{error}</p>
@@ -209,42 +214,42 @@ const PaymentSuccess: React.FC = () => {
             <div className="flex justify-center mb-4">
               {statusInfo.icon}
             </div>
-            <CardTitle className={`text-2xl text-${statusInfo.color}-700`}>
+            <CardTitle className={`text-2xl ${statusInfo.textColor}`}>
               {statusInfo.title}
             </CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
-            <p className={`text-${statusInfo.color}-600`}>
+            <p className={statusInfo.textColor}>
               {statusInfo.message}
             </p>
             
             {status && (
-              <div className="mt-6 p-4 bg-white/50 rounded-lg">
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <div className="mt-6 p-4 bg-card/50 rounded-lg border border-border">
+                <h3 className="font-semibold mb-3 flex items-center gap-2 text-foreground">
                   <Receipt className="w-4 h-4" />
                   Detail Transaksi
                 </h3>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <span className="text-muted-foreground">Order ID:</span>
-                    <p className="font-mono">{status.order_id}</p>
+                    <p className="font-mono text-foreground">{status.order_id}</p>
                   </div>
                   {status.amount && (
                     <div>
                       <span className="text-muted-foreground">Jumlah:</span>
-                      <p className="font-semibold">Rp{parseInt(status.amount).toLocaleString()}</p>
+                      <p className="font-semibold text-foreground">Rp{parseInt(status.amount).toLocaleString()}</p>
                     </div>
                   )}
                   {status.payment_type && (
                     <div>
                       <span className="text-muted-foreground">Metode:</span>
-                      <p className="capitalize">{status.payment_type}</p>
+                      <p className="capitalize text-foreground">{status.payment_type}</p>
                     </div>
                   )}
                   {status.transaction_time && (
                     <div>
                       <span className="text-muted-foreground">Waktu:</span>
-                      <p>{new Date(status.transaction_time).toLocaleString('id-ID')}</p>
+                      <p className="text-foreground">{new Date(status.transaction_time).toLocaleString('id-ID')}</p>
                     </div>
                   )}
                 </div>

@@ -21,13 +21,15 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { API_CONFIG, API_ENDPOINTS, apiPost, ApiResponse, AuthData } from "@/config/api";
+import { API_CONFIG, API_ENDPOINTS, apiPost, apiGet, ApiResponse, AuthData } from "@/config/api";
+import logoImage from "/assets/img/logo_autofile.png";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -40,28 +42,47 @@ const LoginPage = () => {
     name: "",
     phone: "",
     rememberMe: false,
-    agreeToTerms: false,
     referral_code: ""
   });
 
   // Check if user is already logged in
   useEffect(() => {
-    const checkAuthStatus = () => {
+    const checkAuthStatus = async () => {
       const token = localStorage.getItem('auth_token');
       const userData = localStorage.getItem('user_data');
       
       if (token && userData) {
-        // Check if there's a redirect URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const redirectUrl = urlParams.get('redirect');
-        
-        if (redirectUrl) {
-          // Redirect to the specified URL
-          window.location.href = decodeURIComponent(redirectUrl);
-        } else {
-          // Default redirect to dashboard
-          navigate('/dashboard');
+        try {
+          // Verify token is still valid by calling /auth/me
+          const result = await apiGet('/auth/me');
+          
+          if (result.success && result.data) {
+            // Token is valid, redirect to dashboard
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectUrl = urlParams.get('redirect');
+            
+            if (redirectUrl) {
+              // Redirect to the specified URL
+              window.location.href = decodeURIComponent(redirectUrl);
+            } else {
+              // Default redirect to dashboard
+              navigate('/dashboard');
+            }
+          } else {
+            // Token is invalid, clear storage
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user_data');
+            setCheckingAuth(false);
+          }
+        } catch (error) {
+          // Error checking token, clear storage
+          console.error('Auth check error:', error);
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user_data');
+          setCheckingAuth(false);
         }
+      } else {
+        setCheckingAuth(false);
       }
     };
 
@@ -129,21 +150,8 @@ const LoginPage = () => {
         errors.password_confirmation = ['Passwords do not match'];
       }
 
-      if (!formData.agreeToTerms) {
-        errors.terms = ['You must accept the terms and conditions'];
-      }
-
-      // Password strength validation
-      if (formData.password) {
-        const hasLower = /[a-z]/.test(formData.password);
-        const hasUpper = /[A-Z]/.test(formData.password);
-        const hasNumber = /\d/.test(formData.password);
-        const hasSymbol = /[!@#$%^&*(),.?":{}|<>]/.test(formData.password);
-
-        if (!hasLower || !hasUpper || !hasNumber || !hasSymbol) {
-          errors.password = ['Password must contain uppercase, lowercase, number, and symbol'];
-        }
-      }
+      // Password strength validation - hanya minimal 8 karakter
+      // Tidak perlu uppercase, lowercase, number, atau symbol
     }
 
     setFieldErrors(errors);
@@ -179,8 +187,8 @@ const LoginPage = () => {
         password: formData.password,
         confirmPassword: formData.password_confirmation,
         phone: formData.phone.trim() || null,
-        termsAccepted: formData.agreeToTerms,
-        privacyAccepted: formData.agreeToTerms,
+        termsAccepted: true,
+        privacyAccepted: true,
         referralCode: formData.referral_code.trim() || null,
         marketingOptIn: false
       };
@@ -251,26 +259,28 @@ const LoginPage = () => {
   const getPasswordStrength = (password: string): { strength: number; label: string; color: string } => {
     if (!password) return { strength: 0, label: '', color: '' };
 
-    let score = 0;
-    if (password.length >= 8) score++;
-    if (/[a-z]/.test(password)) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/\d/.test(password)) score++;
-    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) score++;
-
-    const levels = [
-      { strength: 0, label: '', color: '' },
-      { strength: 20, label: 'Very Weak', color: 'bg-red-500' },
-      { strength: 40, label: 'Weak', color: 'bg-orange-500' },
-      { strength: 60, label: 'Fair', color: 'bg-yellow-500' },
-      { strength: 80, label: 'Good', color: 'bg-blue-500' },
-      { strength: 100, label: 'Strong', color: 'bg-green-500' }
-    ];
-
-    return levels[score] || levels[0];
+    // Simplified: hanya berdasarkan panjang password
+    const length = password.length;
+    
+    if (length < 8) return { strength: 0, label: 'Terlalu Pendek', color: 'bg-red-500' };
+    if (length < 12) return { strength: 60, label: 'Cukup', color: 'bg-yellow-500' };
+    if (length < 16) return { strength: 80, label: 'Baik', color: 'bg-blue-500' };
+    return { strength: 100, label: 'Kuat', color: 'bg-green-500' };
   };
 
   const passwordStrength = getPasswordStrength(formData.password);
+
+  // Show loading screen while checking auth
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background flex items-center justify-center p-4">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background flex items-center justify-center p-4">
@@ -285,11 +295,14 @@ const LoginPage = () => {
       <div className="w-full max-w-md relative z-10">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <span className="font-mono text-2xl font-semibold">
-              <span className="bg-primary text-primary-foreground px-2 py-1 rounded">RAY</span>
-              <span className="text-foreground ml-2">MAIZING</span>
-            </span>
+          <div className="flex items-center justify-center mb-4">
+            <a href="/" className="inline-block hover:opacity-80 transition-opacity">
+              <img 
+                src={logoImage} 
+                alt="Raymaizing Logo" 
+                className="h-16 w-auto object-contain"
+              />
+            </a>
           </div>
           <h1 className="text-3xl font-bold mb-2">
             {isLogin ? 'Masuk ke Akun Anda' : 'Buat Akun Baru'}
@@ -451,7 +464,7 @@ const LoginPage = () => {
                     <span className="text-xs text-muted-foreground">{passwordStrength.label}</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Minimal 8 karakter dengan huruf besar, kecil, angka, dan simbol
+                    Minimal 8 karakter
                   </p>
                 </div>
               )}
@@ -523,38 +536,14 @@ const LoginPage = () => {
                     Lupa password?
                   </button>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-start space-x-2">
-                    <Checkbox 
-                      id="terms"
-                      checked={formData.agreeToTerms}
-                      onCheckedChange={(checked) => handleInputChange('agreeToTerms', checked as boolean)}
-                      disabled={loading}
-                    />
-                    <Label htmlFor="terms" className="text-sm leading-relaxed">
-                      Saya setuju dengan{' '}
-                      <button type="button" className="text-primary hover:underline">
-                        Syarat & Ketentuan
-                      </button>{' '}
-                      dan{' '}
-                      <button type="button" className="text-primary hover:underline">
-                        Kebijakan Privasi
-                      </button>
-                    </Label>
-                  </div>
-                  {fieldErrors.terms && (
-                    <p className="text-sm text-red-600">{fieldErrors.terms[0]}</p>
-                  )}
-                </div>
-              )}
+              ) : null}
             </div>
 
             {/* Submit Button */}
             <Button 
               type="submit" 
               className="w-full h-12 text-lg font-semibold gradient-primary btn-primary-glow gap-2"
-              disabled={loading || (retryAfter > 0 && import.meta.env.MODE !== 'development') || (!isLogin && !formData.agreeToTerms)}
+              disabled={loading || (retryAfter > 0 && import.meta.env.MODE !== 'development')}
             >
               {loading ? (
                 <>
@@ -588,7 +577,6 @@ const LoginPage = () => {
                     name: "",
                     phone: "",
                     rememberMe: false,
-                    agreeToTerms: false,
                     referral_code: ""
                   });
                 }}
